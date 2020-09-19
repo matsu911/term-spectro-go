@@ -12,14 +12,16 @@ var app = &views.Application{}
 var window = &mainWindow{}
 
 type model struct {
-	x     int
-	y     int
-	endx  int
-	endy  int
-	hide  bool
-	enab  bool
-	loc   string
-	specs [][]float64
+	x         int
+	y         int
+	endx      int
+	endy      int
+	hide      bool
+	enab      bool
+	open      bool
+	audioPath string
+	loc       string
+	specs     [][]float64
 }
 
 func (m *model) GetBounds() (int, int) {
@@ -85,27 +87,40 @@ func (a *mainWindow) HandleEvent(ev tcell.Event) bool {
 		case tcell.KeyCtrlL:
 			app.Refresh()
 			return true
+		case tcell.KeyEsc:
+			a.model.open = false
+			a.updateKeys()
+			return true
 		case tcell.KeyRune:
-			switch ev.Rune() {
-			case 'Q', 'q':
-				app.Quit()
-				return true
-			case 'S', 's':
-				a.model.hide = false
+			if a.model.open {
+				a.model.audioPath += string(ev.Rune())
 				a.updateKeys()
-				return true
-			case 'H', 'h':
-				a.model.hide = true
-				a.updateKeys()
-				return true
-			case 'E', 'e':
-				a.model.enab = true
-				a.updateKeys()
-				return true
-			case 'D', 'd':
-				a.model.enab = false
-				a.updateKeys()
-				return true
+			} else {
+				switch ev.Rune() {
+				case 'Q', 'q':
+					app.Quit()
+					return true
+				case 'O', 'o':
+					a.model.open = true
+					a.updateKeys()
+					return true
+				case 'S', 's':
+					a.model.hide = false
+					a.updateKeys()
+					return true
+				case 'H', 'h':
+					a.model.hide = true
+					a.updateKeys()
+					return true
+				case 'E', 'e':
+					a.model.enab = true
+					a.updateKeys()
+					return true
+				case 'D', 'd':
+					a.model.enab = false
+					a.updateKeys()
+					return true
+				}
 			}
 		}
 	}
@@ -113,13 +128,21 @@ func (a *mainWindow) HandleEvent(ev tcell.Event) bool {
 }
 
 func (a *mainWindow) Draw() {
-	a.status.SetLeft(a.model.loc)
+	// a.status.SetLeft(a.model.loc)
+	if a.model.open {
+		a.status.SetLeft("file: " + a.model.audioPath)
+	} else {
+		a.status.SetLeft("")
+	}
 	a.Panel.Draw()
 }
 
 func (a *mainWindow) updateKeys() {
 	m := a.model
 	w := "[%AQ%N] Quit"
+	if !m.open {
+		w += "  [%AO%N] Open file"
+	}
 	if !m.enab {
 		w += "  [%AE%N] Enable cursor"
 	} else {
@@ -143,8 +166,8 @@ func main() {
 	title.SetStyle(tcell.StyleDefault.
 		Background(tcell.ColorTeal).
 		Foreground(tcell.ColorWhite))
-	title.SetCenter("CellView Test", tcell.StyleDefault)
-	title.SetRight("Example v1.0", tcell.StyleDefault)
+	title.SetCenter("Spectrogram Viewer", tcell.StyleDefault)
+	title.SetRight("v1.0", tcell.StyleDefault)
 
 	window.keybar = views.NewSimpleStyledText()
 	window.keybar.RegisterStyle('N', tcell.StyleDefault.
@@ -164,7 +187,7 @@ func main() {
 
 	window.status.SetLeft("My status is here.")
 	window.status.SetRight("%UCellView%N demo!")
-	window.status.SetCenter("Cen%ST%Ner")
+	// window.status.SetCenter("Cen%ST%Ner")
 
 	window.main = views.NewCellView()
 	window.main.SetModel(window.model)
