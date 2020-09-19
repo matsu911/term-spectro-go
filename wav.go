@@ -1,10 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"os"
+	"time"
 
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/effects"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/speaker"
 	"github.com/mjibson/go-dsp/fft"
 	"github.com/mjibson/go-dsp/wav"
 )
@@ -41,4 +47,24 @@ func ReadWav(fileName string) [][]float64 {
 		ret = append(ret, tmp)
 	}
 	return ret
+}
+
+func PlayAudio(audioPath string) (beep.StreamSeekCloser, beep.Format) {
+	f, err := os.Open(audioPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	streamer, format, err := mp3.Decode(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+
+	fmt.Println("before")
+	ctrl := &beep.Ctrl{Streamer: beep.Loop(-1, streamer)}
+	resampler := beep.ResampleRatio(4, 1, ctrl)
+	volume := &effects.Volume{Streamer: resampler, Base: 2}
+	speaker.Play(volume)
+	return streamer, format
 }

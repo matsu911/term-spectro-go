@@ -158,6 +158,10 @@ func (a *mainWindow) updateKeys() {
 }
 
 func main() {
+	streamer, _ := PlayAudio("test.mp3")
+	defer streamer.Close()
+
+	fmt.Println("after PlayAudio")
 	specs := ReadWav("./test.wav")
 
 	window.model = &model{endx: 60, endy: 15, specs: specs}
